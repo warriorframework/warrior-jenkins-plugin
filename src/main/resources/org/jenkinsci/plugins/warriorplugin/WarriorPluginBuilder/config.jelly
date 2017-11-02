@@ -1,0 +1,99 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <f:entry title="Configuration details*">
+    <table width="100%">
+      <f:radioBlock name="configType" value="configGit" checked="${instance.configType == 'configGit'}" title="Use configuration file from GIT repository" inline="true">
+        <f:nested>
+          <table width="100%">
+            <f:entry title="URL*" field="gitConfigUrl">
+              <f:textbox/>
+            </f:entry>
+            <f:entry title="Configuration file*" field="gitConfigFile">
+              <f:textbox />
+            </f:entry>
+            <f:entry title="Type*" field="gitConfigCloneType">
+              <f:radio name="gitConfigCloneType" title="Branch" value="branch" checked="${instance.gitConfigCloneType == null || instance.gitConfigCloneType == 'branch'}" />
+              <f:radio name="gitConfigCloneType" title="Commit ID" value="commitId" checked="${instance.gitConfigCloneType == 'commitId'}" />
+              <f:radio name="gitConfigCloneType" title="Tag" value="tag" checked="${instance.gitConfigCloneType == 'tag'}" />
+              <f:entry title="Value" field="gitConfigTagValue">
+                <f:textbox/>
+              </f:entry>
+            </f:entry>
+            <f:optionalBlock field="gitConfigCredentials" title="Provide git credentials" checked="${instance.gitConfigCredentials}" inline="true">
+              <f:entry title="Username*" field="gitConfigUname">
+                <f:textbox/>
+              </f:entry>
+              <f:entry title="Password*" field="gitConfigPwd">
+                <f:password/>
+              </f:entry>
+            </f:optionalBlock>
+          </table>
+        </f:nested>
+      </f:radioBlock>
+
+      <f:radioBlock name="configType" value="sftpConfig" checked="${instance.configType == 'sftpConfig'}" title="Use configuration file from SFTP server" inline="true">
+        <f:nested>
+          <table width="100%">
+            <f:entry title="Name/IP*" field="sftpConfigIp">
+              <f:textbox/>
+            </f:entry>
+            <f:entry title="Username*" field="sftpConfigUname">
+              <f:textbox/>
+            </f:entry>
+            <f:entry title="Password*" field="sftpConfigPwd">
+              <f:password/>
+            </f:entry>
+            <f:entry title="Configuration file*" field="sftpConfigFile">
+              <f:textbox/>
+            </f:entry>
+          </table>
+        </f:nested>
+      </f:radioBlock>
+    </table>
+  </f:entry>
+
+  <f:entry title="Files to run*">
+    <f:repeatable var="warFile" name="runFiles" items="${instance.runFiles}" minimum="1" noAddButton="false">
+      <table width="100%">
+        <f:entry title="File Path" field="runFile">
+          <f:textbox value="${warFile.runFile}" />
+        </f:entry>
+        <f:entry>
+          <div align="right">
+            <input type="button" value="Delete Branch" class="repeatable-delete show-if-not-only" style="margin-left: 1em;" />
+          </div>
+        </f:entry>
+      </table>
+    </f:repeatable>
+  </f:entry>
+
+  <f:entry title="Python path" field="pythonPath">
+    <f:textbox />
+  </f:entry>
+
+  <f:block>
+    <table width="100%">
+      <f:optionalBlock field="uploadExecLog" title="Copy Warrior log files to remote server" checked="${instance.uploadExecLog}" inline="true" >
+        <f:entry title="Name/IP*" field="uploadServerIp">
+          <f:textbox/>
+        </f:entry>
+        <f:entry title="Username*" field="uploadServerUname">
+          <f:textbox/>
+        </f:entry>
+        <f:entry title="Password*" field="uploadServerPwd">
+          <f:password/>
+        </f:entry>
+        <f:entry title="File transfer type*" field="uploadServerType">
+          <f:radio name="uploadServerType" title="FTP" value="ftp" checked="${instance.uploadServerType == 'ftp'}" />
+          <f:radio name="uploadServerType" title="SFTP" value="sftp" checked="${instance.uploadServerType == null || instance.uploadServerType == 'sftp'}" />
+          <f:radio name="uploadServerType" title="SCP" value="scp" checked="${instance.uploadServerType == 'scp'}" />
+        </f:entry>
+        <f:entry title="Destination directory" field="uploadServerDir">
+          <f:textbox/>
+        </f:entry>
+      </f:optionalBlock>
+    </table>
+  </f:block>
+   
+  </j:jelly>
