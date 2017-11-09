@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 
@@ -235,23 +236,28 @@ public class WarriorPluginBuilder extends Builder implements SimpleBuildStep {
             try{
                 Process pShell = Runtime.getRuntime().exec(command, envp, file);
                 BufferedReader stdInput = new BufferedReader(new 
-                        InputStreamReader(pShell.getInputStream()));
+                        InputStreamReader(pShell.getInputStream(), StandardCharsets.UTF_8));
                 BufferedReader stdError = new BufferedReader(new 
-                        InputStreamReader(pShell.getErrorStream()));
-                // read the output from Shell execution
-                listener.getLogger().println("Execution log:");
-                while ((shellOutput = stdInput.readLine()) != null) {
-                    listener.getLogger().println(shellOutput);
-                }
-                // read any errors from Shell execution
-                listener.getLogger().println("Error log(if any):");
-                while ((shellOutput = stdError.readLine()) != null) {
-                    listener.getLogger().println(shellOutput);
-                }
-                // Return false for non-zero exit code
-                if (pShell.waitFor() != 0){
-                    listener.getLogger().println("Execution failed with exit code: " + pShell.waitFor());
-                    return false;
+                        InputStreamReader(pShell.getErrorStream(), StandardCharsets.UTF_8));
+                try {
+                    // read the output from Shell execution
+                    listener.getLogger().println("Execution log:");
+                    while ((shellOutput = stdInput.readLine()) != null) {
+                        listener.getLogger().println(shellOutput);
+                    }
+                    // read any errors from Shell execution
+                    listener.getLogger().println("Error log(if any):");
+                    while ((shellOutput = stdError.readLine()) != null) {
+                        listener.getLogger().println(shellOutput);
+                    }
+                    // Return false for non-zero exit code
+                    if (pShell.waitFor() != 0){
+                        listener.getLogger().println("Execution failed with exit code: " + pShell.waitFor());
+                        return false;
+                    }
+                } finally {
+                    stdInput.close();
+                    stdError.close();
                 }
             }catch(IOException | InterruptedException e){
                 status = false;
@@ -817,14 +823,15 @@ public class WarriorPluginBuilder extends Builder implements SimpleBuildStep {
         String warriorPath = workspace.getRemote() + "/WarriorFramework/warrior/";
         String warriorExe = warriorPath + "Warrior";
 
-        String runFileCommand = "";
         Iterator<WarriorRunFileParam> warriorRunFileIter = runFiles.iterator();
+        StringBuffer buf = new StringBuffer();
         while(warriorRunFileIter.hasNext()){
             WarriorRunFileParam runFileParam = warriorRunFileIter.next();
-            String absRunFile = warriorPath + "Warriorspace/" + runFileParam.getRunFile().trim();
-            runFileCommand = runFileCommand + " " + absRunFile;
+            String absRunFile = " " + warriorPath + "Warriorspace/" + runFileParam.getRunFile().trim();
+            buf.append(absRunFile);
         }
 
+        String runFileCommand = buf.toString();
         String executionDir = warriorPath + "Warriorspace/Execution";
         String warriorCmd = "python " + warriorExe + runFileCommand + " -outputdir " + executionDir;
         listener.getLogger().println("Warrior command: "+ warriorCmd);

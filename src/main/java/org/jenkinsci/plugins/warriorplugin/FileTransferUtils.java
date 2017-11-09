@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
@@ -47,7 +48,15 @@ public class FileTransferUtils{
         if (destDir != null && !(destDir.isEmpty())){
             saveFile = destDir + File.separator + saveFile;
         }
-        sftpChannel.put(new FileInputStream(uploadFile), saveFile);
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(uploadFile);
+            sftpChannel.put(fis, saveFile);
+        } finally {
+            if (fis != null) {
+                fis.close();
+            }
+        }
         sftpChannel.exit();
         session.disconnect();
     }
@@ -77,7 +86,15 @@ public class FileTransferUtils{
         channel.connect();
         ChannelSftp sftpChannel = (ChannelSftp) channel;
 
-        sftpChannel.get(downloadFile, new FileOutputStream(saveFile));
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(saveFile);
+            sftpChannel.get(downloadFile, fos);
+        } finally {
+            if (fos != null) {
+                fos.close();
+            }
+        }
         sftpChannel.exit();
         session.disconnect();
     }
@@ -104,14 +121,19 @@ public class FileTransferUtils{
         URL url = new URL(ftpUrl);
         URLConnection conn = url.openConnection();
         OutputStream outputStream = conn.getOutputStream();
-        FileInputStream inputStream = new FileInputStream(uploadFile);
-
-        byte[] buffer = new byte[BUFFER_SIZE];
-        int bytesRead = -1;
-        while ((bytesRead = inputStream.read(buffer)) != -1) {
-            outputStream.write(buffer, 0, bytesRead);
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(uploadFile);
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int bytesRead = -1;
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+        } finally {
+            if (fis != null) {
+                fis.close();
+            }
         }
-        inputStream.close();
         outputStream.close();
     }
 
@@ -162,7 +184,7 @@ public class FileTransferUtils{
             // The access time should be sent here,
             // but it is not accessible with JavaAPI ;-<
             command += (" " + (uploadFile.lastModified()/1000) + " 0\n");
-            out.write(command.getBytes());
+            out.write(command.getBytes(StandardCharsets.UTF_8));
             out.flush();
             checkAck(in);
         }
@@ -182,19 +204,23 @@ public class FileTransferUtils{
         checkAck(in);
 
         // send a content of file
-        fis = new FileInputStream(uploadFile);
-        byte[] buf = new byte[1024];
-        while(true){
-            int len = fis.read(buf, 0, buf.length);
-            if(len <= 0)
-                break;
-            out.write(buf, 0, len); //out.flush();
+        try {
+            fis = new FileInputStream(uploadFile);
+            byte[] buf = new byte[1024];
+            while(true){
+                int len = fis.read(buf, 0, buf.length);
+                if(len <= 0)
+                    break;
+                out.write(buf, 0, len); //out.flush();
+            }
+            // send '\0'
+            buf[0] = 0;
+            out.write(buf, 0, 1);
+        } finally {
+            if (fis != null) {
+                fis.close();
+            }
         }
-        fis.close();
-        fis = null;
-        // send '\0'
-        buf[0] = 0;
-        out.write(buf, 0, 1);
         out.flush();
         checkAck(in);
         out.close();
