@@ -199,7 +199,7 @@ public class FileTransferUtils{
             command += uploadFileName;
         }
         command += "\n";
-        out.write(command.getBytes());
+        out.write(command.getBytes(StandardCharsets.UTF_8));
         out.flush();
         checkAck(in);
 
